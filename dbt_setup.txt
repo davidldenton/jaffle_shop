@@ -1,0 +1,75 @@
+#DBT data sources:
+
+http://dbt-tutorial-public.s3-us-west-2.amazonaws.com/jaffle_shop_orders.csv
+
+http://dbt-tutorial-public.s3-us-west-2.amazonaws.com/jaffle_shop_customers.csv
+
+http://dbt-tutorial-public.s3-us-west-2.amazonaws.com/stripe_payments.csv
+
+
+# Create DBs
+create database raw;
+
+raw \c;
+
+create database analytics;
+	
+create schema jaffle_shop;
+
+create schema stripe;
+
+
+#Create Tables:
+create table jaffle_shop.customers(
+  id integer,
+  first_name varchar(50),
+  last_name varchar(50)
+);
+	
+create table jaffle_shop.orders(
+  id integer,
+  user_id integer,
+  order_date date,
+  status varchar(50),
+  _etl_loaded_at timestamp default current_timestamp
+);
+	
+create table stripe.payment(
+  id integer,
+  orderid integer,
+  paymentmethod varchar(50),
+  status varchar(50),
+  amount integer,
+  created date,
+  _batched_at timestamp default current_timestamp
+);
+
+COPY jaffle_shop.customers(id, first_name, last_name)
+FROM '/Users/ddent01/Downloads/jaffle_shop_customers.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY jaffle_shop.orders(id, user_id, order_date, status)
+FROM '/Users/ddent01/Downloads/jaffle_shop_orders.csv'
+DELIMITER ','
+CSV HEADER;
+
+COPY stripe.payment(id, orderid, paymentmethod, status, amount, created)
+FROM '/Users/ddent01/Downloads/stripe_payments.csv'
+DELIMITER ','
+CSV HEADER;
+
+
+# Create DB user
+create user david with encrypted password 'letmein123';
+grant all privileges on database raw to david;
+GRANT USAGE ON SCHEMA jaffle_shop TO david;
+GRANT USAGE ON SCHEMA stripe TO david;
+ALTER USER david WITH SUPERUSER;
+
+# Log in as david
+psql -d raw -U david
+
+
+# DBT profiles.yml = ~/.dbt/
+
